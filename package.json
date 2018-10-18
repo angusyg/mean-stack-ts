@@ -1,0 +1,42 @@
+{
+  "name": "mean-stack-ts",
+  "version": "1.0.0",
+  "description": "Mean stack boilerplate in typescript",
+  "main": "./server/build/bin/www.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "concurrently \"cd client && npm i\" \"cd server && npm i\"",
+    "build": "concurrently \"cd client && npm run build\" \"cd server && npm run build\"",
+    "logs": "pm2 logs mean-stack-ts",
+    "start": "pm2 start ecosystem.config.js --env production",
+    "stop": "pm2 delete ecosystem.config.js",
+    "dev": "concurrently \"cd client && npm run start\" \"cd server && npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/angusyg/mean-stack-ts.git"
+  },
+  "keywords": [
+    "mean",
+    "mongodb",
+    "express",
+    "angular",
+    "node",
+    "mongoose",
+    "passport",
+    "jsonwebtoken",
+    "pm2",
+    "docker",
+    "docker-compose",
+    "typescript"
+  ],
+  "author": "Angusyg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/angusyg/mean-stack-ts/issues"
+  },
+  "homepage": "https://github.com/angusyg/mean-stack-ts#readme",
+  "devDependencies": {
+    "concurrently": "^3.6.1"
+  }
+}
