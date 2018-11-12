@@ -1,4 +1,5 @@
 import uuidv4 from 'uuid/v4';
+import kindOf from 'kind-of';
 import jwt from 'jsonwebtoken';
 import { tokenSecretKey, accessTokenExpirationTime } from '../config/api';
 import User from '../models/users';
@@ -12,6 +13,13 @@ import { LoginDto, TokenDto, LoginResultDto, IUserDocument, RefreshDto } from '.
  * @class ApiService
  */
 class ApiService {
+
+  constructor() {
+    // Checks configuration value
+    if (kindOf(tokenSecretKey) === undefined || kindOf(tokenSecretKey) === null || kindOf(tokenSecretKey) !== 'string' || tokenSecretKey === '') throw new RangeError(`Configuration: tokenSecretKey value is not valid '${tokenSecretKey}'}`);
+    if (kindOf(accessTokenExpirationTime) === undefined || kindOf(accessTokenExpirationTime) === null || kindOf(accessTokenExpirationTime) !== 'number') throw new RangeError(`Configuration: accessTokenExpirationTime value is not valid '${accessTokenExpirationTime}'}`);
+  }
+
   /**
    * Generates an access token with user infos
    *

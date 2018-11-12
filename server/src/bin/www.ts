@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
+import { config } from 'dotenv';
 import http from 'http';
 import app from '../app';
 import logger from '../lib/logger';
+
+// Load of environment variables
+config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev'});
 
 /**
  * Normalizes a port into a number, string, or false.

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import kindOf from 'kind-of';
 import apiController from '../controllers/api';
 import { loggerPath, loginPath, refreshPath, logoutPath, validateTokenPath } from '../config/api';
 import { requiresLogin, requiresRole } from '../lib/security';
@@ -17,6 +18,18 @@ class ApiRouter {
    * @memberof ApiRouter
    */
   constructor() {
+    // Checks configuration value
+    const loggerPathType = kindOf(loggerPath);
+    if (loggerPathType === undefined || loggerPathType === null || loggerPathType !== 'string' || loggerPath === '') throw new RangeError(`Configuration: loggerPath value is not valid '${loggerPath}'}`);
+    const loginPathType = kindOf(loginPath);
+    if (loginPathType === undefined || loginPathType === null || loginPathType !== 'string' || loginPath === '') throw new RangeError(`Configuration: loginPath value is not valid '${loginPath}'}`);
+    const refreshPathType = kindOf(refreshPath);
+    if (refreshPathType === undefined || refreshPathType === null || refreshPathType !== 'string' || refreshPath === '') throw new RangeError(`Configuration: refreshPath value is not valid '${refreshPath}'}`);
+    const logoutPathType = kindOf(logoutPath);
+    if (logoutPathType === undefined || logoutPathType === null || logoutPathType !== 'string' || logoutPath === '') throw new RangeError(`Configuration: logoutPath value is not valid '${logoutPath}'}`);
+    const validateTokenPathType = kindOf(validateTokenPath);
+    if (validateTokenPathType === undefined || validateTokenPathType === null || validateTokenPathType !== 'string' || validateTokenPath === '') throw new RangeError(`Configuration: validateTokenPath value is not valid '${validateTokenPath}'}`);
+
     // Router creation
     this.router = Router();
     // API routes
