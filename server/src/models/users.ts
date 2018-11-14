@@ -1,8 +1,8 @@
 import { Schema, model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import restify from 'express-restify-mongoose';
-import { saltFactor } from '../config/app';
-import { getDefaultRestifyOptions } from '../config/api';
+import appConfig from '../config/app';
+import apiConfig from '../config/api';
 import { Router, Request, Response, NextFunction } from 'express';
 import { RequestEnhanced, IUser, IUserModel, IUserDocument } from '../@types';
 
@@ -97,7 +97,7 @@ export const userSchema: Schema = new Schema({
  * @memberof userSchema
  */
 userSchema.pre<IUserDocument>('save', function (next: NextFunction) { // eslint-disable-line func-names
-  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser> this).password, saltFactor);
+  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser> this).password, appConfig.saltFactor);
   next();
 });
 
@@ -125,7 +125,7 @@ userSchema.methods.comparePassword = function (candidatePassword: string) { // e
  * @memberof userSchema
  */
 userSchema.statics.restify = function (router: Router, preMiddleware?: Function[]) { // eslint-disable-line func-names
-  const options = getDefaultRestifyOptions();
+  const options = apiConfig.getDefaultRestifyOptions();
   // Endpoint path
   options.name = 'Users';
   // Lets pass password field on POST and PUT

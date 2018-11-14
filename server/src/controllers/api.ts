@@ -1,4 +1,4 @@
-import { refreshTokenHeader } from '../config/api';
+import apiConfig from '../config/api';
 import apiService from '../services/api';
 import logger from '../lib/logger';
 import { ApiError } from '../lib/errors';
@@ -62,7 +62,7 @@ class ApiController {
    */
   public refreshToken(req: Request, res: Response, next: NextFunction): void {
     apiService
-      .refreshToken((<RequestEnhanced> req).user, req.headers[refreshTokenHeader])
+      .refreshToken((<RequestEnhanced> req).user, req.headers[apiConfig.refreshTokenHeader])
       .then((token: TokenDto) => res.status(200).json(token))
       .catch((err: Error) => next(err));
   }

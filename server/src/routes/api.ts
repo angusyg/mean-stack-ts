@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import kindOf from 'kind-of';
 import apiController from '../controllers/api';
-import { loggerPath, loginPath, refreshPath, logoutPath, validateTokenPath } from '../config/api';
+import apiConfig from '../config/api';
 import { requiresLogin, requiresRole } from '../lib/security';
 import User from '../models/users';
 
@@ -18,18 +18,6 @@ class ApiRouter {
    * @memberof ApiRouter
    */
   constructor() {
-    // Checks configuration value
-    const loggerPathType = kindOf(loggerPath);
-    if (loggerPathType === undefined || loggerPathType === null || loggerPathType !== 'string' || loggerPath === '') throw new RangeError(`Configuration: loggerPath value is not valid '${loggerPath}'}`);
-    const loginPathType = kindOf(loginPath);
-    if (loginPathType === undefined || loginPathType === null || loginPathType !== 'string' || loginPath === '') throw new RangeError(`Configuration: loginPath value is not valid '${loginPath}'}`);
-    const refreshPathType = kindOf(refreshPath);
-    if (refreshPathType === undefined || refreshPathType === null || refreshPathType !== 'string' || refreshPath === '') throw new RangeError(`Configuration: refreshPath value is not valid '${refreshPath}'}`);
-    const logoutPathType = kindOf(logoutPath);
-    if (logoutPathType === undefined || logoutPathType === null || logoutPathType !== 'string' || logoutPath === '') throw new RangeError(`Configuration: logoutPath value is not valid '${logoutPath}'}`);
-    const validateTokenPathType = kindOf(validateTokenPath);
-    if (validateTokenPathType === undefined || validateTokenPathType === null || validateTokenPathType !== 'string' || validateTokenPath === '') throw new RangeError(`Configuration: validateTokenPath value is not valid '${validateTokenPath}'}`);
-
     // Router creation
     this.router = Router();
     // API routes
@@ -54,7 +42,7 @@ class ApiRouter {
      * @code {204} if successful, no content
      * @name logger
      */
-    this.router.post(loggerPath, apiController.logger);
+    this.router.post(apiConfig.loggerPath, apiController.logger);
 
     /**
      * @path {POST} /login
@@ -69,7 +57,7 @@ class ApiRouter {
      * @code {401} if password is not valid
      * @name login
      */
-    this.router.post(loginPath, apiController.login);
+    this.router.post(apiConfig.loginPath, apiController.login);
 
     /**
      * @path {GET} /logout
@@ -79,7 +67,7 @@ class ApiRouter {
      * @code {401} if login is not valid
      * @name logout
      */
-    this.router.get(logoutPath, requiresLogin, apiController.logout);
+    this.router.get(apiConfig.logoutPath, requiresLogin, apiController.logout);
 
     /**
      * @path {GET} /refresh
@@ -92,7 +80,7 @@ class ApiRouter {
      * @code {500} if an unexpected error occurred
      * @name refresh
      */
-    this.router.get(refreshPath, requiresLogin, apiController.refreshToken);
+    this.router.get(apiConfig.refreshPath, requiresLogin, apiController.refreshToken);
 
     /**
      * @path {GET} /validate
@@ -102,7 +90,7 @@ class ApiRouter {
      * @code {401} if JWT is invalid
      * @name validate
      */
-    this.router.get(validateTokenPath, requiresLogin, apiController.validateToken);
+    this.router.get(apiConfig.validateTokenPath, requiresLogin, apiController.validateToken);
   }
 
   /**

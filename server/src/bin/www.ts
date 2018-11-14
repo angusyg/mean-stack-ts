@@ -1,91 +1,132 @@
 #!/usr/bin/env node
-
-import { config } from 'dotenv';
 import http from 'http';
-import app from '../app';
+import App from '../app';
 import logger from '../lib/logger';
-
-// Load of environment variables
-config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev'});
+import { Application } from 'express';
 
 /**
- * Normalizes a port into a number, string, or false.
+ * Application Server class
  *
- * @param {(string|number)} val value to normalize
- * @returns {number|string|boolean} port value or false if val is not valid
+ * @class AppServer
  */
-function normalizePort(val: string|number) {
-  let port: number = (typeof val === 'string') ? parseInt(val, 10) : val;
-  if (isNaN(port)) return val;
-  if (port >= 0) return port;
-  return false;
-}
+class AppServer {
+  /**
+   * Server port
+   *
+   * @private
+   * @type {number | string | boolean}
+   * @memberof AppServer
+   */
+  private port: any;
 
-// Gets port from app
-const port = normalizePort(app.get('port'));
+  /**
+   * Application associated to Server
+   *
+   * @private
+   * @type {Application}
+   * @memberof AppServer
+   */
+  private app: any;
 
-/**
- * Event listener for HTTP server "error" event.
- *
- * @param {NodeJS.ErrnoException} error received error
- */
-function onError(error: NodeJS.ErrnoException) {
-  if (error.syscall !== 'listen') throw error;
+  /**
+   * HTTP Server
+   *
+   * @private
+   * @type {http.Server}
+   * @memberof AppServer
+   */
+  private server: any;
 
-  const bind = typeof port === 'string' ? `Pipe ${port}` : `Port ${port}`;
+  constructor() {
+    console.log('BOOTSTRAP');
 
-  // Handles specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      logger.fatal(`${bind} requires elevated privileges`);
+    App.bootstrap()
+      .then((app: Application) => {
+        this.app = app;
+        // Gets port from app
+        this.port = this.normalizePort(this.app.get('port'));
+        // Creates HTTP server
+        this.server = http.createServer(this.app);
+        // Listens on provided port, on all network interfaces
+        this.server.listen(this.port, () => {
+          logger.info('Server started, listening on %s', this.port);
+          // For tests
+          this.app.emit('appStarted');
+          // For pm2
+          if (process.env.PM2) (<any>process).send('ready');
+        });
+        // Catches server errors
+        this.server.on('error', this.onError);
+        // Catches signals to gracefully quit
+        process.on('SIGTERM', this.gracefulShutdown);
+        process.on('SIGINT', this.gracefulShutdown);
+      })
+      .catch((err: Error) => {
+        logger.fatal(`Error during server init: ${err}`);
+        this.gracefulShutdown();
+      });
+  }
+
+  /**
+   * Event listener for HTTP server "error" event.
+   *
+   * @private
+   * @param {NodeJS.ErrnoException} error
+   * @memberof AppServer
+   */
+  private onError(error: NodeJS.ErrnoException) {
+    if (error.syscall !== 'listen') throw error;
+    const bind = this.port === 'string' ? `Pipe ${this.port}` : `Port ${this.port}`;
+    // Handles specific listen errors with friendly messages
+    switch (error.code) {
+      case 'EACCES':
+        logger.fatal(`${bind} requires elevated privileges`);
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        logger.fatal(`${bind} is already in use`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  }
+
+  /**
+   * Normalizes a port into a number, string, or false.
+   *
+   * @private
+   * @param {(string | number)} val
+   * @returns {(number | string | boolean)}
+   * @memberof AppServer
+   */
+  private normalizePort(val: string | number): number | string | boolean {
+    let port: number = typeof val === 'string' ? parseInt(val, 10) : val;
+    if (isNaN(port)) return val;
+    if (port >= 0) return port;
+    return false;
+  }
+
+  /**
+   * Gracefully closes application server, waiting for opened
+   *
+   * @private
+   * @memberof AppServer
+   */
+  private gracefulShutdown(): void {
+    logger.info('Closing application server ...');
+    // Closes DB connection
+    this.app.get('db').close();
+    this.server.close(() => {
+      logger.info('Application server closed');
+      process.exit(0);
+    });
+    // Forces close server after 5secs
+    setTimeout(e => {
+      logger.info('Application server closed', e);
       process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      logger.fatal(`${bind} is already in use`);
-      process.exit(1);
-      break;
-    default:
-      throw error;
+    }, 5000);
   }
 }
 
-/**
- * Gracefully closes application server, waiting for opened
- * requests to end and forces close after 5s timeout *
- */
-function gracefulShutdown(): void {
-  logger.info('Closing application server ...');
-
-  app.get('db').close();
-  server.close(() => {
-    logger.info('Application server closed');
-    process.exit(0);
-  });
-
-  // Forces close server after 5secs
-  setTimeout((e) => {
-    logger.info('Application server closed', e);
-    process.exit(1);
-  }, 5000);
-}
-
-// Creates HTTP server
-const server = http.createServer(app);
-
-// Listens on provided port, on all network interfaces
-server.listen(port, () => {
-  logger.info('Server started, listening on %s', port);
-  // For tests
-  app.emit('appStarted');
-  // For pm2
-  if (process.env.PM2) (<any> process).send('ready');
-});
-
-// Catches server errors
-server.on('error', onError);
-
-// Catches signals to gracefully quit
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
-module.exports = server;
+export default new AppServer();

@@ -4,7 +4,7 @@ import { stub, SinonStub } from 'sinon';
 import { promisify } from 'util';
 import { verify } from 'jsonwebtoken';
 import User from '../models/users';
-import { tokenSecretKey } from '../config/api';
+import apiConfig from '../config/api';
 import { ApiError, UnauthorizedAccessError } from '../lib/errors';
 import { LoginResultDto, TokenDto, LoginDto, JwtPayloadDto } from '../@types';
 import api from './api';
@@ -59,7 +59,7 @@ class ApiServiceTest {
     expect(tokens).to.be.an('object');
     expect(tokens).to.have.property('refreshToken', user.refreshToken);
     expect(tokens).to.have.property('accessToken');
-    await jwtVerify(tokens.accessToken, <string>tokenSecretKey);
+    await jwtVerify(tokens.accessToken, <string> apiConfig.tokenSecretKey);
   }
 
   @test('login(infos: LoginDto): should reject with a Bad login UnauthorizedAccessError')
@@ -132,7 +132,7 @@ class ApiServiceTest {
     const token: TokenDto = await api.refreshToken(this.userTest, this.refreshToken);
     expect(token).to.be.an('object');
     expect(token).to.have.property('accessToken');
-    const u: any = await jwtVerify(token.accessToken, <string>tokenSecretKey)
+    const u: any = await jwtVerify(token.accessToken, <string> apiConfig.tokenSecretKey)
     expect(u).to.have.property('id', user.id);
     expect(u).to.have.property('login', user.login);
     expect(u).to.have.property('roles').to.be.an('array').to.have.lengthOf(1).to.include('USER');

@@ -1,20 +1,5 @@
 import { CorsOptions } from 'cors';
-
-/**
- * Application server port
- *
- * @export
- * @type {number}
- */
-export const port: string | number = process.env.PORT || 3000;
-
-/**
- * Salt factor for user password crypt
- *
- * @export
- * @type {number}
- */
-export const saltFactor: number = 10;
+import { IsNumber, Min, IsDefined, IsArray, IsBoolean, IsString, ValidateNested } from 'class-validator';
 
 /**
  * Cross origin middleware configuration
@@ -24,14 +9,64 @@ export const saltFactor: number = 10;
  */
 class CorsConfiguration implements CorsOptions {
   /**
-   * Checks if request origin is a domain authorized
+   * Allowed methods on cross origin request
    *
-   * @static
-   * @param {string} origin origin of request
-   * @param {Function} callback callback to pass control to CORS middleware
+   * @type {string[]}
    * @memberof CorsConfiguration
    */
-  public static origin(origin: string, callback: Function): void {
+  @IsArray()
+  @IsString({ each : true })
+  public readonly methods: string[] = [
+    'GET',
+    'POST',
+    'OPTIONS',
+    'PUT',
+    'PATCH',
+    'DELETE'
+  ];
+
+  /**
+   * Allowed headers on cross origin request
+   *
+   * @type {string[]}
+   * @memberof CorsConfiguration
+   */
+  @IsArray()
+  @IsString({ each : true })
+  public readonly allowedHeaders: string[] = [
+    'Authorization',
+    'Refresh',
+    'Content-type'
+  ];
+
+  /**
+   * Credential request allowed
+   *
+   * @type {boolean}
+   * @memberof CorsConfiguration
+   */
+  @IsBoolean()
+  public readonly credentials: boolean = true;
+
+  /**
+   * Max age between cross origin OPTION request (in seconds)
+   *
+   * @type {number}
+   * @memberof CorsConfiguration
+   */
+  @IsNumber()
+  public readonly maxAge: number = 600;
+
+  /**
+   *
+   * Checks if request origin is a domain authorized
+   *
+   * @param {string} origin
+   * @param {Function} callback
+   * @returns {void}
+   * @memberof CorsConfiguration
+   */
+  public origin(origin: string, callback: Function): void {
     // Origins init
     const whitelistOrigins: string | string[] = process.env.CORS_ORIGINS || [];
     // If no white list origins, authorized
@@ -41,59 +76,48 @@ class CorsConfiguration implements CorsOptions {
     // Unauthorized origin
     return callback(new Error('Not allowed by CORS'));
   }
-
-  /**
-   * Allowed methods on cross origin request
-   *
-   * @static
-   * @type {string[]}
-   * @memberof CorsConfiguration
-   */
-  public static methods: string[] = [
-    'GET',
-    'POST',
-    'OPTIONS',
-    'PUT',
-    'PATCH',
-    'DELETE',
-  ];
-
-  /**
-   * Allowed headers on cross origin request
-   *
-   * @static
-   * @type {string[]}
-   * @memberof CorsConfiguration
-   */
-  public static allowedHeaders: string[] = [
-    'Authorization',
-    'Refresh',
-    'Content-type',
-  ];
-
-  /**
-   * Credential request allowed
-   *
-   * @static
-   * @type {boolean}
-   * @memberof CorsConfiguration
-   */
-  public static credentials: boolean = true;
-
-  /**
-   * Max age between cross origin OPTION request (in seconds)
-   *
-   * @static
-   * @type {number}
-   * @memberof CorsConfiguration
-   */
-  public static maxAge: number = 600;
 }
 
 /**
- * Cors configuration instance
+ * App global configuration class
  *
- * @export
- * @type {CorsConfiguration}
+ * @class AppConfig
  */
-export const corsConfiguration: CorsConfiguration = new CorsConfiguration();
+class AppConfig {
+  /**
+   * Application server port
+   *
+   * @type {number}
+   * @memberof AppConfig
+   */
+  @IsNumber()
+  @Min(0)
+  public readonly port: number;
+
+  /**
+   * Salt factor for user password crypt
+   *
+   * @type {number}
+   * @memberof AppConfig
+   */
+  @IsNumber()
+  @Min(0)
+  public readonly saltFactor: number = 10;
+
+  /**
+   * CORS configuration options
+   *
+   * @type {CorsConfiguration}
+   * @memberof AppConfig
+   */
+  @IsDefined()
+  @ValidateNested()
+  public readonly corsConfiguration: CorsConfiguration;
+
+  constructor() {
+    this.port = process.env.PORT ? Number.parseInt(process.env.PORT) : 3000;
+    this.corsConfiguration = new CorsConfiguration();
+  }
+}
+
+export default new AppConfig();

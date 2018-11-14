@@ -150,14 +150,6 @@ export interface ISettings {
  */
 export interface IUser {
   /**
-   * ID
-   *
-   * @type {string}
-   * @memberof IUser
-   */
-  _id: string;
-
-  /**
    * User login
    *
    * @type {string}
