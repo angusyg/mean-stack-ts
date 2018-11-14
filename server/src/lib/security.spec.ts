@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { suite, test } from "mocha-typescript";
 import { SinonStub, stub } from 'sinon';
-import { initialize, requiresLogin, requiresRole } from './security';
+import Security from './security';
 import { ForbiddenOperationError } from './errors';
 import * as passport from './passport';
 

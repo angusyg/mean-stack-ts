@@ -7,16 +7,17 @@ import pino from 'express-pino-logger';
 import uuidv4 from 'uuid/v4';
 import helmet from 'helmet';
 import cors from 'cors';
-import appConfig from './config/app';
-import apiConfig from './config/api';
+import AppConfig from './config/app';
+import ApiConfig from './config/api';
+import DbConfig from './config/db';
 import connect from './config/db';
 import { errorNoRouteMapped, errorHandler } from './lib/errorhandler';
 import logger from './lib/logger';
-import { initialize } from './lib/security';
+import Security from './lib/security';
 import apiRouter from './routes/api';
 import { Connection } from 'mongoose';
-import checkConfig from './lib/configurator';
-import { rejects } from 'assert';
+import { validate, ValidationError } from 'class-validator';
+import { LoggerConfig } from './config/logger';
 
 /**
  * Main application
@@ -51,25 +52,28 @@ export default class App {
   }
 
   /**
-   * Build an applicatio after configuration validation
+   * Build an application after configuration validation
    *
    * @static
    * @returns {(Promise<Application | undefined>)}
    * @memberof App
    */
   public static bootstrap(): Promise<Application> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Load of environment variables
-        config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev' });
-        // Configuration validation
-        await checkConfig();
-        // Application creation
-        return resolve(new App().app);
-      } catch (err) {
-        logger.fatal(`Error during application bootstrap: ${err}`);
-        return reject(err);
-      }
+    return new Promise((resolve, reject) => {
+      // Configuration validation
+      Promise.all([
+        validate(ApiConfig.getConfig()),
+        validate(AppConfig.getConfig()),
+        validate(DbConfig.getConfig()),
+        validate(LoggerConfig.getConfig()),
+      ])
+        .then((validationResults: ValidationError[][]) => {
+          // If at least 1 error has been found => rejects
+          if (validationResults.some(result => result.length > 0)) return reject(new Error('Configuration validation failed, check previous log'));
+          // All ok, resolves
+          return resolve(new App().app);
+        })
+        .catch((err: Error) => reject(err));
     });
   }
 
@@ -81,11 +85,11 @@ export default class App {
    */
   private configuration(): void {
     // Port set
-    this.app.set('port', appConfig.port);
+    this.app.set('port', AppConfig.getConfig().port);
     // Connection to db
-    connect()
+    DbConfig.getConfig().connect()
       .then((db: Connection) => this.app.set('db', db))
-      .catch(/* istanbul ignore next */ (err: Error) => process.exit(-1));
+      .catch(/* istanbul ignore next */(err: Error) => process.exit(-1));
   }
 
   /**
@@ -105,12 +109,12 @@ export default class App {
     // Security middleware
     this.app.use(helmet());
     // CORS middleware
-    this.app.use(cors(appConfig.corsConfiguration));
+    this.app.use(cors(AppConfig.getConfig().corsConfiguration));
     // Body parser (to json) middleware
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
     // Security initialization
-    this.app.use(initialize());
+    this.app.use(new Security().initialize());
     // Static files
     this.app.use(compression());
     // If production env, lets express server serve static resources
@@ -125,7 +129,7 @@ export default class App {
    */
   private routes(): void {
     // Maps modules routes
-    this.app.use(apiConfig.base, apiRouter);
+    this.app.use(ApiConfig.getConfig().base, apiRouter);
   }
 
   /**

@@ -1,32 +1,79 @@
 import mongoose from 'mongoose';
 import logger from '../lib/logger';
 
-// Database server URL
-const server: string = process.env.DB_URL || '127.0.0.1:27017';
-
-// Database name
-const database: string = process.env.DB_NAME || 'mean';
-
-// Overrides mongoose default promise with es6 Promise (to get full support)
-mongoose.Promise = Promise;
 
 /**
- * Connects app to MongoDB database
+ * Database global configuration
  *
  * @export
- * @returns {Promise<mongoose.Connection>}
+ * @class DbConfig
  */
-export default function connect(): Promise<mongoose.Connection> {
-  return new Promise((resolve, reject) => {
-    mongoose
-      .connect(`mongodb://${server}/${database}`, { useNewUrlParser: true })
-      .then(() => {
-        logger.info(`Connection opened to DB 'mongodb://${server}/${database}'`);
-        resolve(mongoose.connection);
-      })
-      .catch(/* istanbul ignore next */(err: Error) => {
-        logger.fatal(`Error during DB connection : ${JSON.stringify(err)}`);
-        reject(err);
-      });
-  });
+export default class DbConfig {
+  /**
+   * Singleton instance
+   *
+   * @private
+   * @static
+   * @type {DbConfig}
+   * @memberof DbConfig
+   */
+  private static instance: DbConfig;
+
+  /**
+   * Database server URL
+   *
+   * @private
+   * @type {(string | undefined)}
+   * @memberof DbConfig
+   */
+  private server: string | undefined;
+
+  /**
+   * Database name
+   *
+   * @private
+   * @type {(string | undefined)}
+   * @memberof DbConfig
+   */
+  private database: string | undefined;
+
+  private constructor() {
+    this.server = process.env.DB_URL;
+    this.database = process.env.DB_NAME;
+    // Overrides mongoose default promise with es6 Promise (to get full support)
+    mongoose.Promise = Promise;
+  }
+
+  /**
+   * Returns a singleton instance of DbConfig
+   *
+   * @static
+   * @returns {DbConfig}
+   * @memberof DbConfig
+   */
+  public static getConfig(): DbConfig {
+    if (!DbConfig.instance) DbConfig.instance = new DbConfig();
+    return DbConfig.instance;
+  }
+
+  /**
+   * Connects app to MongoDB database
+   *
+   * @returns {Promise<mongoose.Connection>}
+   * @memberof DbConfig
+   */
+  public connect(): Promise<mongoose.Connection> {
+    return new Promise((resolve, reject) => {
+      mongoose
+        .connect(`mongodb://${this.server}/${this.database}`, { useNewUrlParser: true })
+        .then(() => {
+          logger.info(`Connection opened to DB 'mongodb://${this.server}/${this.database}'`);
+          resolve(mongoose.connection);
+        })
+        .catch(/* istanbul ignore next */(err: Error) => {
+          logger.fatal(`Error during DB connection : ${err}`);
+          reject(err);
+        });
+    });
+  }
 }

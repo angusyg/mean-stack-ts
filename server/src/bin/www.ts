@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+import { config } from 'dotenv';
 import http from 'http';
-import App from '../app';
-import logger from '../lib/logger';
 import { Application } from 'express';
+import App from '../app';
 
 /**
  * Application Server class
@@ -38,8 +38,9 @@ class AppServer {
   private server: any;
 
   constructor() {
+    // Load of environment variables
+    config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev' });
     console.log('BOOTSTRAP');
-
     App.bootstrap()
       .then((app: Application) => {
         this.app = app;
@@ -49,7 +50,7 @@ class AppServer {
         this.server = http.createServer(this.app);
         // Listens on provided port, on all network interfaces
         this.server.listen(this.port, () => {
-          logger.info('Server started, listening on %s', this.port);
+          console.info(`Server started, listening on ${this.port}`);
           // For tests
           this.app.emit('appStarted');
           // For pm2
@@ -62,7 +63,7 @@ class AppServer {
         process.on('SIGINT', this.gracefulShutdown);
       })
       .catch((err: Error) => {
-        logger.fatal(`Error during server init: ${err}`);
+        console.error(`Error during server init: ${err}`);
         this.gracefulShutdown();
       });
   }
@@ -80,11 +81,11 @@ class AppServer {
     // Handles specific listen errors with friendly messages
     switch (error.code) {
       case 'EACCES':
-        logger.fatal(`${bind} requires elevated privileges`);
+        console.error(`${bind} requires elevated privileges`);
         process.exit(1);
         break;
       case 'EADDRINUSE':
-        logger.fatal(`${bind} is already in use`);
+        console.error(`${bind} is already in use`);
         process.exit(1);
         break;
       default:
@@ -114,16 +115,16 @@ class AppServer {
    * @memberof AppServer
    */
   private gracefulShutdown(): void {
-    logger.info('Closing application server ...');
+    console.info('Closing application server ...');
     // Closes DB connection
     this.app.get('db').close();
     this.server.close(() => {
-      logger.info('Application server closed');
+      console.info('Application server closed');
       process.exit(0);
     });
     // Forces close server after 5secs
     setTimeout(e => {
-      logger.info('Application server closed', e);
+      console.info('Application server closed', e);
       process.exit(1);
     }, 5000);
   }

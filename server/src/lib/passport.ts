@@ -2,11 +2,11 @@ import passport from 'passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import apiConfig from '../config/api';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import User from '../models/users';
 import { UnauthorizedAccessError, JwtTokenExpiredError, NoJwtTokenError, JwtTokenSignatureError } from './errors';
 import logger from '../lib/logger';
 import { JwtPayloadDto, IUser, RequestEnhanced } from '../@types';
-import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 /**
  * JWT Passport Strategy
@@ -23,7 +23,7 @@ export default class JWTPassport {
   private strategy = new Strategy(
     {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: <string>apiConfig.tokenSecretKey,
+      secretOrKey: <string>apiConfig.getConfig().tokenSecretKey,
     },
     this.strategyCallback
   );

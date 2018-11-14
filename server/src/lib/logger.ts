@@ -1,11 +1,8 @@
-import pino from 'pino';
+import pino, { LoggerOptions } from 'pino';
 import pinoCaller from 'pino-caller';
-import { enabled, level } from '../config/logger';
+import LoggerConfig from '../config/logger';
 
-// Configures pino for current environment
-const options: pino.LoggerOptions = {
-  enabled,
-  level
-};
+// Retrieves configuration for current environment
+const options: LoggerOptions = LoggerConfig.getConfig();
 
 export default process.env.NODE_ENV === 'production' ? pino(options) : pinoCaller(pino(options));

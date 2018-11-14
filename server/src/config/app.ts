@@ -61,8 +61,8 @@ class CorsConfiguration implements CorsOptions {
    *
    * Checks if request origin is a domain authorized
    *
-   * @param {string} origin
-   * @param {Function} callback
+   * @param {string} origin request origin
+   * @param {Function} callback callback function
    * @returns {void}
    * @memberof CorsConfiguration
    */
@@ -83,7 +83,17 @@ class CorsConfiguration implements CorsOptions {
  *
  * @class AppConfig
  */
-class AppConfig {
+export default class AppConfig {
+  /**
+   * Sungleton instance
+   *
+   * @private
+   * @static
+   * @type {AppConfig}
+   * @memberof AppConfig
+   */
+  private static instance: AppConfig;
+
   /**
    * Application server port
    *
@@ -92,7 +102,7 @@ class AppConfig {
    */
   @IsNumber()
   @Min(0)
-  public readonly port: number;
+  public readonly port: number | undefined;
 
   /**
    * Salt factor for user password crypt
@@ -114,10 +124,20 @@ class AppConfig {
   @ValidateNested()
   public readonly corsConfiguration: CorsConfiguration;
 
-  constructor() {
-    this.port = process.env.PORT ? Number.parseInt(process.env.PORT) : 3000;
+  private constructor() {
+    this.port = process.env.PORT ? Number.parseInt(process.env.PORT) : undefined;
     this.corsConfiguration = new CorsConfiguration();
   }
-}
 
-export default new AppConfig();
+  /**
+   * Returns a singleton instance of AppConfig
+   *
+   * @static
+   * @returns {AppConfig} singleton instance of AppConfig
+   * @memberof AppConfig
+   */
+  public static getConfig() {
+    if (!AppConfig.instance) AppConfig.instance = new AppConfig();
+    return AppConfig.instance;
+  }
+}

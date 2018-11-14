@@ -62,7 +62,7 @@ class ApiController {
    */
   public refreshToken(req: Request, res: Response, next: NextFunction): void {
     apiService
-      .refreshToken((<RequestEnhanced> req).user, req.headers[apiConfig.refreshTokenHeader])
+      .refreshToken((<RequestEnhanced> req).user, req.headers[apiConfig.getConfig().refreshTokenHeader])
       .then((token: TokenDto) => res.status(200).json(token))
       .catch((err: Error) => next(err));
   }

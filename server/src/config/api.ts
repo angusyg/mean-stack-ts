@@ -3,14 +3,24 @@ import { NotFoundResourceError } from '../lib/errors';
 import { RequestEnhanced } from '../@types';
 import { Secret } from 'jsonwebtoken';
 import { RestifyOptions } from 'express-restify-mongoose';
-import { IsNotEmpty, IsString, IsNumber, IsPositive, Min, IsDefined } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsPositive, Min, IsDefined, validate, ValidationError } from 'class-validator';
 
 /**
  * API global configuration class
  *
  * @class ApiConfig
  */
-class ApiConfig {
+export default class ApiConfig {
+  /**
+   * Singleton instance
+   *
+   * @private
+   * @static
+   * @type {ApiConfig}
+   * @memberof ApiConfig
+   */
+  private static instance: ApiConfig;
+
   /**
    * Base URL for API
    *
@@ -29,7 +39,7 @@ class ApiConfig {
    */
   @IsString()
   @IsNotEmpty()
-  public readonly tokenSecretKey: Secret | string;
+  public readonly tokenSecretKey: string | undefined;
 
   /**
    * JWT token header name
@@ -123,20 +133,30 @@ class ApiConfig {
     USER: 'USER',
   };
 
-  constructor() {
-    this.tokenSecretKey = process.env.TOKEN_SECRET || '';
-    console.log('KEY', process.env.TOKEN_SECRET);
-
+  private constructor() {
+    this.tokenSecretKey = process.env.TOKEN_SECRET;
   }
 
   /**
-   * Get REST endpoint default configuration
+   * Returns a singleton instance of ApiConfig
    *
-   * @returns {RestifyOptions}
+   * @static
+   * @returns {ApiConfig} singleton instance of ApiConfig
+   * @memberof ApiConfig
+   */
+  public static getConfig(): ApiConfig {
+    if (!ApiConfig.instance) ApiConfig.instance = new ApiConfig();
+    return ApiConfig.instance;
+  }
+
+  /**
+   * Returns REST endpoint default configuration
+   *
+   * @returns {RestifyOptions} restify default options
    * @memberof ApiConfig
    */
   public getDefaultRestifyOptions(): RestifyOptions {
-    const restifyOptions: RestifyOptions = < RestifyOptions > {};
+    const restifyOptions: RestifyOptions = <RestifyOptions>{};
     restifyOptions.name = '';
     restifyOptions.prefix = '';
     restifyOptions.version = '';
@@ -156,6 +176,3 @@ class ApiConfig {
     return restifyOptions;
   };
 }
-
-export default new ApiConfig();
-
