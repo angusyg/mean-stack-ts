@@ -8,7 +8,7 @@ import logger from '../lib/logger';
  * @export
  * @class DbConfig
  */
-export default class DbConfig {
+export class DbConfig {
   /**
    * Singleton instance
    *

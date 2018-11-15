@@ -1,6 +1,6 @@
 import pino, { LoggerOptions } from 'pino';
 import pinoCaller from 'pino-caller';
-import LoggerConfig from '../config/logger';
+import LoggerConfig from '../config/log';
 
 // Retrieves configuration for current environment
 const options: LoggerOptions = LoggerConfig.getConfig();

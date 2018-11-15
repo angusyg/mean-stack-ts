@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { config } from 'dotenv';
 import http from 'http';
 import { Application } from 'express';
 import App from '../app';
+import { Config } from '../config/config';
 
 /**
  * Application Server class
@@ -38,8 +38,9 @@ class AppServer {
   private server: any;
 
   constructor() {
-    // Load of environment variables
-    config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev' });
+    // Load of app configuration
+    Config.load();
+
     console.log('BOOTSTRAP');
     App.bootstrap()
       .then((app: Application) => {

@@ -10,7 +10,7 @@ import { IsNotEmpty, IsString, IsNumber, IsPositive, Min, IsDefined, validate, V
  *
  * @class ApiConfig
  */
-export default class ApiConfig {
+export class ApiConfig {
   /**
    * Singleton instance
    *

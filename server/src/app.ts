@@ -1,4 +1,3 @@
-import { config } from 'dotenv';
 import express, { Application } from 'express';
 import path from 'path';
 import bodyParser from 'body-parser';
@@ -7,17 +6,16 @@ import pino from 'express-pino-logger';
 import uuidv4 from 'uuid/v4';
 import helmet from 'helmet';
 import cors from 'cors';
-import AppConfig from './config/app';
-import ApiConfig from './config/api';
-import DbConfig from './config/db';
-import connect from './config/db';
+import { validate, ValidationError, validateSync } from 'class-validator';
+import { Config }from './config/config';
+import { loadConfig as apiLoadConfig, apiConfig } from './config/api';
+import { loadConfig as dbLoadConfig, dbConfig }  from './config/db';
+import { loadConfig as loggerLoadConfig, loggerConfig }  from './config/log';
 import { errorNoRouteMapped, errorHandler } from './lib/errorhandler';
 import logger from './lib/logger';
 import Security from './lib/security';
 import apiRouter from './routes/api';
 import { Connection } from 'mongoose';
-import { validate, ValidationError } from 'class-validator';
-import { LoggerConfig } from './config/logger';
 
 /**
  * Main application
@@ -60,9 +58,12 @@ export default class App {
    */
   public static bootstrap(): Promise<Application> {
     return new Promise((resolve, reject) => {
+      validateSync(apiLoadConfig);
+      validateSync(appLoadConfig);
+      validateSync(dbLoadConfig);
+      validateSync(loggerLoadConfig);
       // Configuration validation
       Promise.all([
-        validate(ApiConfig.getConfig()),
         validate(AppConfig.getConfig()),
         validate(DbConfig.getConfig()),
         validate(LoggerConfig.getConfig()),

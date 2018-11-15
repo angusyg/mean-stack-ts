@@ -83,7 +83,7 @@ class CorsConfiguration implements CorsOptions {
  *
  * @class AppConfig
  */
-export default class AppConfig {
+export class AppConfig {
   /**
    * Sungleton instance
    *

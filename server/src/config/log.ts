@@ -7,22 +7,22 @@ import { IsBoolean, IsIn } from 'class-validator';
  * @export
  * @class LoggerConfig
  */
-export class LoggerConfig implements LoggerOptions {
+export class LogConfig implements LoggerOptions {
   /**
    * Singleton instance
    *
    * @private
    * @static
-   * @type {LoggerConfig}
-   * @memberof LoggerConfig
+   * @type {LogConfig}
+   * @memberof LogConfig
    */
-  private static instance: LoggerOptions;
+  private static instance: LogConfig;
 
   /**
    * Minimal log level
    *
    * @type {(Level | undefined)}
-   * @memberof LoggerConfig
+   * @memberof LogConfig
    */
   @IsIn(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
   public readonly level: LevelWithSilent;
@@ -31,7 +31,7 @@ export class LoggerConfig implements LoggerOptions {
    * Enabled log
    *
    * @type {boolean}
-   * @memberof LoggerConfig
+   * @memberof LogConfig
    */
   @IsBoolean()
   public readonly enabled: boolean;
@@ -42,14 +42,14 @@ export class LoggerConfig implements LoggerOptions {
   }
 
   /**
-   * Returns a singleton instance of LoggerConfig
+   * Returns a singleton instance of LogConfig
    *
    * @static
    * @returns {LoggerOptions}
-   * @memberof LoggerConfig
+   * @memberof LogConfig
    */
-  public static getConfig(): LoggerOptions {
-    if (!LoggerConfig.instance) LoggerConfig.instance = new LoggerConfig();
-    return LoggerConfig.instance;
+  public static getConfig(): LogConfig {
+    if (!LogConfig.instance) LogConfig.instance = new LogConfig();
+    return LogConfig.instance;
   }
 }
