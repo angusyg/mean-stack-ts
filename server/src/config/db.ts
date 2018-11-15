@@ -1,79 +1,90 @@
-import mongoose from 'mongoose';
-import logger from '../lib/logger';
+export default {
+  host: {
+    doc: 'Database host name/IP',
+    format: String,
+    default: '127.0.0.1:27017',
+    env: 'DB_HOST',
+  },
+  name: {
+    doc: 'Database name',
+    format: String,
+    default: 'mean',
+    env: 'DB_NAME',
+  },
+};
 
+// /**
+//  * Database global configuration
+//  *
+//  * @export
+//  * @class DbConfig
+//  */
+// export class DbConfig {
+//   /**
+//    * Singleton instance
+//    *
+//    * @private
+//    * @static
+//    * @type {DbConfig}
+//    * @memberof DbConfig
+//    */
+//   private static instance: DbConfig;
 
-/**
- * Database global configuration
- *
- * @export
- * @class DbConfig
- */
-export class DbConfig {
-  /**
-   * Singleton instance
-   *
-   * @private
-   * @static
-   * @type {DbConfig}
-   * @memberof DbConfig
-   */
-  private static instance: DbConfig;
+//   /**
+//    * Database server URL
+//    *
+//    * @private
+//    * @type {(string | undefined)}
+//    * @memberof DbConfig
+//    */
+//   private server: string | undefined;
 
-  /**
-   * Database server URL
-   *
-   * @private
-   * @type {(string | undefined)}
-   * @memberof DbConfig
-   */
-  private server: string | undefined;
+//   /**
+//    * Database name
+//    *
+//    * @private
+//    * @type {(string | undefined)}
+//    * @memberof DbConfig
+//    */
+//   private database: string | undefined;
 
-  /**
-   * Database name
-   *
-   * @private
-   * @type {(string | undefined)}
-   * @memberof DbConfig
-   */
-  private database: string | undefined;
+//   private constructor() {
+//     this.server = process.env.DB_URL;
+//     this.database = process.env.DB_NAME;
+//     // Overrides mongoose default promise with es6 Promise (to get full support)
+//     mongoose.Promise = Promise;
+//   }
 
-  private constructor() {
-    this.server = process.env.DB_URL;
-    this.database = process.env.DB_NAME;
-    // Overrides mongoose default promise with es6 Promise (to get full support)
-    mongoose.Promise = Promise;
-  }
+//   /**
+//    * Returns a singleton instance of DbConfig
+//    *
+//    * @static
+//    * @returns {DbConfig}
+//    * @memberof DbConfig
+//    */
+//   public static getConfig(): DbConfig {
+//     if (!DbConfig.instance) DbConfig.instance = new DbConfig();
+//     return DbConfig.instance;
+//   }
 
-  /**
-   * Returns a singleton instance of DbConfig
-   *
-   * @static
-   * @returns {DbConfig}
-   * @memberof DbConfig
-   */
-  public static getConfig(): DbConfig {
-    if (!DbConfig.instance) DbConfig.instance = new DbConfig();
-    return DbConfig.instance;
-  }
-
-  /**
-   * Connects app to MongoDB database
-   *
-   * @returns {Promise<mongoose.Connection>}
-   * @memberof DbConfig
-   */
-  public connect(): Promise<mongoose.Connection> {
-    return new Promise((resolve, reject) => {
-      mongoose
-        .connect(`mongodb://${this.server}/${this.database}`, { useNewUrlParser: true })
-        .then(() => {
-          logger.info(`Connection opened to DB 'mongodb://${this.server}/${this.database}'`);
-          resolve(mongoose.connection);
-        })
-        .catch(/* istanbul ignore next */(err: Error) => {
-          logger.fatal(`Error during DB connection : ${err}`);
-          reject(err);
-        });
-    });
-  }
-}
+//   /**
+//    * Connects app to MongoDB database
+//    *
+//    * @returns {Promise<mongoose.Connection>}
+//    * @memberof DbConfig
+//    */
+//   public connect(): Promise<mongoose.Connection> {
+//     return new Promise((resolve, reject) => {
+//       mongoose
+//         .connect(`mongodb://${this.server}/${this.database}`, { useNewUrlParser: true })
+//         .then(() => {
+//           logger.info(`Connection opened to DB 'mongodb://${this.server}/${this.database}'`);
+//           resolve(mongoose.connection);
+//         })
+//         .catch(/* istanbul ignore next */(err: Error) => {
+//           logger.fatal(`Error during DB connection : ${err}`);
+//           reject(err);
+//         });
+//     });
+//   }
+// }

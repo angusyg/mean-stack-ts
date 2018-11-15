@@ -1,78 +1,22 @@
 import { config } from 'dotenv';
-import { ApiConfig } from './api';
-import { AppConfig } from './app';
-import { DbConfig } from './db';
-import { LogConfig } from './log';
+import convict, { Config } from 'convict';
+import path from 'path';
+import app from './app';
+import api from './api';
+import db from './db';
+import log from './log';
 
-export class Config {
-  /**
-   * Global configuration instance
-   *
-   * @private
-   * @static
-   * @type {Config}
-   * @memberof Config
-   */
-  private static instance: Config;
-
-  /**
-   * Api configuration instance
-   *
-   * @private
-   * @type {ApiConfig}
-   * @memberof Config
-   */
-  private api: ApiConfig;
-
-  /**
-   * App configuration instance
-   *
-   * @private
-   * @type {AppConfig}
-   * @memberof Config
-   */
-  private app: AppConfig;
-
-  /**
-   * Database configurationb instance
-   *
-   * @private
-   * @type {DbConfig}
-   * @memberof Config
-   */
-  private db: DbConfig;
-
-  /**
-   * Log configuration instance
-   *
-   * @private
-   * @type {LogConfig}
-   * @memberof Config
-   */
-  private log: LogConfig;
+class Cfg {
+  public config: Config<any>;
 
   constructor() {
     // Load of environment variables
-    const result = config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env-dev' });
-    if (result.error) throw result.error;
-    else console.log(result.parsed);
-
-    // Load of all configurations
-    this.api = ApiConfig.getConfig();
-    this.app = AppConfig.getConfig();
-    this.db = DbConfig.getConfig();
-    this.log = LogConfig.getConfig();
-  }
-
-  /**
-   * Returns a singleton instance of Config
-   *
-   * @static
-   * @returns {Config} singleton instance of Config
-   * @memberof Config
-   */
-  public static load(): Config {
-    if (!Config.instance) Config.instance = new Config();
-    return Config.instance;
+    config({ path: path.join(__dirname, `./environment/.${process.env.NODE_ENV}`) });
+    // Convict load
+    this.config = convict({ db, log, api, app });
+    // Perform validation
+    this.config.validate({ allowed: 'strict' });
   }
 }
+
+export default new Cfg().config;

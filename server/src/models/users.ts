@@ -1,10 +1,11 @@
 import { Schema, model } from 'mongoose';
 import bcrypt from 'bcrypt';
-import restify from 'express-restify-mongoose';
+import restify, { RestifyOptions } from 'express-restify-mongoose';
 import appConfig from '../config/app';
 import apiConfig from '../config/api';
 import { Router, Request, Response, NextFunction } from 'express';
 import { RequestEnhanced, IUser, IUserModel, IUserDocument } from '../@types';
+import { NotFoundResourceError } from '../lib/errors';
 
 /**
  * Describes a user settings
@@ -96,8 +97,9 @@ export const userSchema: Schema = new Schema({
  * @param {NextFunction} next callback to pass control to next middleware
  * @memberof userSchema
  */
-userSchema.pre<IUserDocument>('save', function (next: NextFunction) { // eslint-disable-line func-names
-  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser> this).password, appConfig.saltFactor);
+userSchema.pre<IUserDocument>('save', function(next: NextFunction) {
+  // eslint-disable-line func-names
+  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser>this).password, appConfig.saltFactor);
   next();
 });
 
@@ -108,9 +110,11 @@ userSchema.pre<IUserDocument>('save', function (next: NextFunction) { // eslint-
  * @return {Promise<boolean>} resolved with match result, rejected on error
  * @memberof userSchema
  */
-userSchema.methods.comparePassword = function (candidatePassword: string) { // eslint-disable-line func-names
+userSchema.methods.comparePassword = function(candidatePassword: string) {
+  // eslint-disable-line func-names
   return new Promise((resolve, reject) => {
-    bcrypt.compare(candidatePassword, this.password)
+    bcrypt
+      .compare(candidatePassword, this.password)
       .then((match: boolean) => resolve(match))
       .catch(/* istanbul ignore next */ (err: Error) => reject(err));
   });
@@ -124,8 +128,25 @@ userSchema.methods.comparePassword = function (candidatePassword: string) { // e
  * @param {[Function[]]} preMiddleware pre middlewares array
  * @memberof userSchema
  */
-userSchema.statics.restify = function (router: Router, preMiddleware?: Function[]) { // eslint-disable-line func-names
-  const options = apiConfig.getDefaultRestifyOptions();
+userSchema.statics.restify = function(router: Router, preMiddleware?: Function[]) {
+  // eslint-disable-line func-names
+  const options: RestifyOptions = <RestifyOptions>{};
+  options.name = '';
+  options.prefix = '';
+  options.version = '';
+  options.private = ['__v'];
+
+  /**
+   * Error handler on REST resource call
+   * @param {Error} err error to handle
+   * @param {RequestEnhanced} req request received
+   * @param {Response} res response to send
+   * @param {NextFunction} next callback to pass control to next middleware
+   */
+  options.onError = (err: Error, req: RequestEnhanced, res: Response, next: NextFunction): void => {
+    if (req.erm.statusCode === 404) next(new NotFoundResourceError(`Resource with id '${req.params.id}' does not exist`));
+    else next(err);
+  };
   // Endpoint path
   options.name = 'Users';
   // Lets pass password field on POST and PUT

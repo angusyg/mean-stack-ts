@@ -38,5 +38,8 @@
   "homepage": "https://github.com/angusyg/mean-stack-ts#readme",
   "devDependencies": {
     "concurrently": "^3.6.1"
+  },
+  "dependencies": {
+    "dotenv": "^6.1.0"
   }
 }

@@ -38,9 +38,6 @@ class AppServer {
   private server: any;
 
   constructor() {
-    // Load of app configuration
-    Config.load();
-
     console.log('BOOTSTRAP');
     App.bootstrap()
       .then((app: Application) => {
