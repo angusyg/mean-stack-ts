@@ -1,11 +1,10 @@
 import { Schema, model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import restify, { RestifyOptions } from 'express-restify-mongoose';
-import appConfig from '../config/app';
-import apiConfig from '../config/api';
 import { Router, Request, Response, NextFunction } from 'express';
 import { RequestEnhanced, IUser, IUserModel, IUserDocument } from '../@types';
 import { NotFoundResourceError } from '../lib/errors';
+import Configuration from '../config/config';
 
 /**
  * Describes a user settings
@@ -99,7 +98,7 @@ export const userSchema: Schema = new Schema({
  */
 userSchema.pre<IUserDocument>('save', function(next: NextFunction) {
   // eslint-disable-line func-names
-  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser>this).password, appConfig.saltFactor);
+  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser>this).password, Configuration.get('app.salt'));
   next();
 });
 

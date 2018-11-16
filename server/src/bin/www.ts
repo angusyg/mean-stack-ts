@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import http from 'http';
-import { Application } from 'express';
+import Configuration from '../config/config';
 import App from '../app';
-import { Config } from '../config/config';
 
 /**
  * Application Server class
@@ -38,42 +37,43 @@ class AppServer {
   private server: any;
 
   constructor() {
-    console.log('BOOTSTRAP');
-    App.bootstrap()
-      .then((app: Application) => {
-        this.app = app;
-        // Gets port from app
-        this.port = this.normalizePort(this.app.get('port'));
-        // Creates HTTP server
-        this.server = http.createServer(this.app);
-        // Listens on provided port, on all network interfaces
-        this.server.listen(this.port, () => {
-          console.info(`Server started, listening on ${this.port}`);
-          // For tests
-          this.app.emit('appStarted');
-          // For pm2
-          if (process.env.PM2) (<any>process).send('ready');
-        });
-        // Catches server errors
-        this.server.on('error', this.onError);
-        // Catches signals to gracefully quit
-        process.on('SIGTERM', this.gracefulShutdown);
-        process.on('SIGINT', this.gracefulShutdown);
-      })
-      .catch((err: Error) => {
-        console.error(`Error during server init: ${err}`);
-        this.gracefulShutdown();
+    try {
+      // Load of configuration
+      Configuration.load();
+      // Application creation
+      this.app = new App().app;
+      // Gets port from app
+      this.port = this.normalizePort(this.app.get('port'));
+      // Creates HTTP server
+      this.server = http.createServer(this.app);
+      // Listens on provided port, on all network interfaces
+      this.server.listen(this.port, () => {
+        console.info(`Server started, listening on ${this.port}`);
+        // For tests
+        this.app.emit('appStarted');
+        // For pm2
+        if (process.env.PM2) (<any>process).send('ready');
       });
+      // Catches server errors
+      this.server.on('error', this.onError);
+      // Catches signals to gracefully quit
+      process.on('SIGTERM', this.gracefulShutdown);
+      process.on('SIGINT', this.gracefulShutdown);
+    } catch (err) {
+      console.error(`Error during server creation: ${err}`);
+      // Shutdown of application server
+      this.gracefulShutdown();
+    }
   }
 
   /**
    * Event listener for HTTP server "error" event.
    *
    * @private
-   * @param {NodeJS.ErrnoException} error
+   * @param {NodeJS.ErrnoException} error error to handle
    * @memberof AppServer
    */
-  private onError(error: NodeJS.ErrnoException) {
+  private onError(error: NodeJS.ErrnoException): void {
     if (error.syscall !== 'listen') throw error;
     const bind = this.port === 'string' ? `Pipe ${this.port}` : `Port ${this.port}`;
     // Handles specific listen errors with friendly messages
@@ -95,8 +95,8 @@ class AppServer {
    * Normalizes a port into a number, string, or false.
    *
    * @private
-   * @param {(string | number)} val
-   * @returns {(number | string | boolean)}
+   * @param {(string | number)} val port value
+   * @returns {(number | string | boolean)} port normalized value
    * @memberof AppServer
    */
   private normalizePort(val: string | number): number | string | boolean {
@@ -114,14 +114,20 @@ class AppServer {
    */
   private gracefulShutdown(): void {
     console.info('Closing application server ...');
-    // Closes DB connection
-    this.app.get('db').close();
-    this.server.close(() => {
-      console.info('Application server closed');
-      process.exit(0);
-    });
+    // Database close if opened
+    if (this.app.get('db')) {
+      // Closes DB connection
+      this.app.get('db').close();
+    }
+    // Server close if started
+    if (this.server) {
+      this.server.close(() => {
+        console.info('Application server closed');
+        process.exit(0);
+      });
+    }
     // Forces close server after 5secs
-    setTimeout(e => {
+    setTimeout((e) => {
       console.info('Application server closed', e);
       process.exit(1);
     }, 5000);

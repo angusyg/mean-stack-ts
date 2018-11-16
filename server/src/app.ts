@@ -1,21 +1,17 @@
 import express, { Application } from 'express';
 import path from 'path';
+import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import pino from 'express-pino-logger';
 import uuidv4 from 'uuid/v4';
 import helmet from 'helmet';
 import cors from 'cors';
-import { validate, ValidationError, validateSync } from 'class-validator';
-import { Config }from './config/config';
-import { loadConfig as apiLoadConfig, apiConfig } from './config/api';
-import { loadConfig as dbLoadConfig, dbConfig }  from './config/db';
-import { loadConfig as loggerLoadConfig, loggerConfig }  from './config/log';
+import Configuration from './config/config';
 import { errorNoRouteMapped, errorHandler } from './lib/errorhandler';
 import logger from './lib/logger';
-import Security from './lib/security';
+import { getCorsConfiguration, initialize } from './lib/security';
 import apiRouter from './routes/api';
-import { Connection } from 'mongoose';
 
 /**
  * Main application
@@ -40,42 +36,18 @@ export default class App {
     // App creation
     this.app = express();
     // App configuration
-    this.configuration();
-    // Middlewares configuration
-    this.middlewares();
-    // Routes
-    this.routes();
-    // Error handlers
-    this.errorHandlers();
-  }
-
-  /**
-   * Build an application after configuration validation
-   *
-   * @static
-   * @returns {(Promise<Application | undefined>)}
-   * @memberof App
-   */
-  public static bootstrap(): Promise<Application> {
-    return new Promise((resolve, reject) => {
-      validateSync(apiLoadConfig);
-      validateSync(appLoadConfig);
-      validateSync(dbLoadConfig);
-      validateSync(loggerLoadConfig);
-      // Configuration validation
-      Promise.all([
-        validate(AppConfig.getConfig()),
-        validate(DbConfig.getConfig()),
-        validate(LoggerConfig.getConfig()),
-      ])
-        .then((validationResults: ValidationError[][]) => {
-          // If at least 1 error has been found => rejects
-          if (validationResults.some(result => result.length > 0)) return reject(new Error('Configuration validation failed, check previous log'));
-          // All ok, resolves
-          return resolve(new App().app);
-        })
-        .catch((err: Error) => reject(err));
-    });
+    this.configuration()
+      .then(() => {
+        // Middlewares configuration
+        this.middlewares();
+        // Routes
+        this.routes();
+        // Error handlers
+        this.errorHandlers();
+      })
+      .catch((err: Error) => {
+        throw err;
+      });
   }
 
   /**
@@ -84,13 +56,22 @@ export default class App {
    * @private
    * @memberof App
    */
-  private configuration(): void {
-    // Port set
-    this.app.set('port', AppConfig.getConfig().port);
-    // Connection to db
-    DbConfig.getConfig().connect()
-      .then((db: Connection) => this.app.set('db', db))
-      .catch(/* istanbul ignore next */(err: Error) => process.exit(-1));
+  private configuration(): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Port set
+        this.app.set('port', Configuration.get('app.port'));
+        // Connection to db
+        const connection = await mongoose.connect(`mongodb://${Configuration.get('db.host')}/${Configuration.get('db.name')}`, { useNewUrlParser: true });
+        console.info(`Connection opened to DB 'mongodb://${Configuration.get('db.host')}/${Configuration.get('db.name')}'`);
+        // Database registration
+        this.app.set('db', mongoose.connection);
+        return resolve();
+      } catch (err) {
+        console.error(`Error during DB connection: ${err}`);
+        return reject(err);
+      }
+    });
   }
 
   /**
@@ -110,16 +91,17 @@ export default class App {
     // Security middleware
     this.app.use(helmet());
     // CORS middleware
-    this.app.use(cors(AppConfig.getConfig().corsConfiguration));
+    this.app.use(cors(getCorsConfiguration()));
     // Body parser (to json) middleware
     this.app.use(bodyParser.json());
+    // Put in body URL encoded parameters
     this.app.use(bodyParser.urlencoded({ extended: false }));
     // Security initialization
-    this.app.use(new Security().initialize());
+    this.app.use(initialize());
     // Static files
     this.app.use(compression());
     // If production env, lets express server serve static resources
-    if (process.env.SERVE_STATIC === 'true') this.app.use(express.static(path.join(__dirname, '../../client/dist')));
+    if (Configuration.get('app.serve')) this.app.use(express.static(path.join(__dirname, '../../client/dist')));
   }
 
   /**
@@ -130,7 +112,7 @@ export default class App {
    */
   private routes(): void {
     // Maps modules routes
-    this.app.use(ApiConfig.getConfig().base, apiRouter);
+    this.app.use(Configuration.get('api.base'), apiRouter);
   }
 
   /**

@@ -8,6 +8,7 @@ import apiConfig from '../config/api';
 import { ApiError, UnauthorizedAccessError } from '../lib/errors';
 import { LoginResultDto, TokenDto, LoginDto, JwtPayloadDto } from '../@types';
 import api from './api';
+import Configuration from '../config/config';
 
 const jwtVerify = promisify(verify);
 
@@ -59,7 +60,7 @@ class ApiServiceTest {
     expect(tokens).to.be.an('object');
     expect(tokens).to.have.property('refreshToken', user.refreshToken);
     expect(tokens).to.have.property('accessToken');
-    await jwtVerify(tokens.accessToken, <string> apiConfig.tokenSecretKey);
+    await jwtVerify(tokens.accessToken, <string>Configuration.get('api.token.key'));
   }
 
   @test('login(infos: LoginDto): should reject with a Bad login UnauthorizedAccessError')
@@ -67,7 +68,7 @@ class ApiServiceTest {
     ApiServiceTest.findOneStub.withArgs({ login: this.userTestBadLogin.login }).resolves(null);
 
     try {
-      await api.login(this.userTestBadLogin)
+      await api.login(this.userTestBadLogin);
     } catch (err) {
       expect(err).to.be.an.instanceof(Error);
       expect(err).to.be.an.instanceof(ApiError);
@@ -86,7 +87,7 @@ class ApiServiceTest {
     ApiServiceTest.comparePasswordStub.withArgs(this.userTest.password).resolves(false);
 
     try {
-      await api.login(this.userTest)
+      await api.login(this.userTest);
     } catch (err) {
       expect(err).to.be.an.instanceof(Error);
       expect(err).to.be.an.instanceof(ApiError);
@@ -103,7 +104,7 @@ class ApiServiceTest {
     ApiServiceTest.findOneStub.withArgs({ login: this.userTest.login }).rejects(new Error('Internal error'));
 
     try {
-      await api.login(this.userTest)
+      await api.login(this.userTest);
     } catch (err) {
       expect(err).to.be.an.instanceof(Error);
       expect(err).to.have.property('message', 'Internal error');
@@ -132,10 +133,14 @@ class ApiServiceTest {
     const token: TokenDto = await api.refreshToken(this.userTest, this.refreshToken);
     expect(token).to.be.an('object');
     expect(token).to.have.property('accessToken');
-    const u: any = await jwtVerify(token.accessToken, <string> apiConfig.tokenSecretKey)
+    const u: any = await jwtVerify(token.accessToken, <string>Configuration.get('api.token.key'));
     expect(u).to.have.property('id', user.id);
     expect(u).to.have.property('login', user.login);
-    expect(u).to.have.property('roles').to.be.an('array').to.have.lengthOf(1).to.include('USER');
+    expect(u)
+      .to.have.property('roles')
+      .to.be.an('array')
+      .to.have.lengthOf(1)
+      .to.include('USER');
   }
 
   @test('refreshToken(user: Object, refreshToken: string): should reject with an UnauthorizedAccessError for missing refresh token')
@@ -149,7 +154,7 @@ class ApiServiceTest {
       expect(err).to.have.property('name', 'UnauthorizedAccessError');
       expect(err).to.have.property('statusCode', 401);
       expect(err).to.have.property('code', 'MISSING_REFRESH_TOKEN');
-      expect(err).to.have.property('message', 'Refresh token\'s missing');
+      expect(err).to.have.property('message', "Refresh token's missing");
     }
   }
 

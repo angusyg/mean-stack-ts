@@ -6,8 +6,9 @@ import jwt from 'jsonwebtoken';
 import apiConfig from '../config/api';
 import User from '../models/users';
 import { UnauthorizedAccessError, JwtTokenExpiredError, NoJwtTokenError, JwtTokenSignatureError } from  './errors';
-import jwtPassport from './passport';
+import { initialize, authenticate } from './passport';
 import { LoginDto } from '../@types';
+import Configuration from '../config/config';
 
 @suite
 class PassportTest {
@@ -35,6 +36,7 @@ class PassportTest {
   }
 
   constructor() {
+    Configuration.load();
     this.userTest = {
       login: 'TEST',
       password: 'TEST',
@@ -43,17 +45,17 @@ class PassportTest {
       login: 'unknown',
       password: 'TEST',
     };
-    this.accessToken = jwt.sign(this.userTest, apiConfig.tokenSecretKey, { expiresIn: apiConfig.accessTokenExpirationTime });
-    this. accessTokenExpired = jwt.sign(this.userTest, apiConfig.tokenSecretKey, { expiresIn: 0 });
-    this. accessTokenBadSignature = jwt.sign(this.userTest, 'SECRET', { expiresIn: apiConfig.accessTokenExpirationTime });
-    this. accessTokenUserNotFound = jwt.sign(this.unknownUser, apiConfig.tokenSecretKey, { expiresIn: apiConfig.accessTokenExpirationTime });
+    this.accessToken = jwt.sign(this.userTest, Configuration.get('api.token.key'), { expiresIn: Configuration.get('api.token.expiration') });
+    this. accessTokenExpired = jwt.sign(this.userTest, Configuration.get('api.token.key'), { expiresIn: 0 });
+    this. accessTokenBadSignature = jwt.sign(this.userTest, 'SECRET', { expiresIn: Configuration.get('api.token.expiration') });
+    this. accessTokenUserNotFound = jwt.sign(this.unknownUser, Configuration.get('api.token.key'), { expiresIn: Configuration.get('api.token.expiration') });
     this. req = { headers: { authorization: '' } };
     this. res = {};
   }
 
   @test('initialize(): should initialize passport')
   public initializeOK() {
-    jwtPassport.initialize();
+    initialize();
     expect(PassportTest.initializeStub.withArgs().calledOnce).to.be.true;
   }
 
@@ -62,7 +64,7 @@ class PassportTest {
     this.req.headers.authorization = `bearer ${this.accessToken}`;
     PassportTest.findOneStub.withArgs({ login: this.userTest.login }).resolves(new User(this.userTest));
 
-    jwtPassport.authenticate(this.req, this.res, PassportTest.next);
+    authenticate(this.req, this.res, PassportTest.next);
     setTimeout(() => {
       expect(this.req).to.have.property('user').to.deep.include(this.userTest);
       expect(PassportTest.next.withArgs().calledOnce).to.be.true;
@@ -73,7 +75,7 @@ class PassportTest {
   public authenticateExpiredToken() {
     this.req.headers.authorization = `bearer ${this.accessTokenExpired}`;
 
-    jwtPassport.authenticate(this.req, this.res, PassportTest.next);
+    authenticate(this.req, this.res, PassportTest.next);
     expect(PassportTest.next.calledOnce).to.be.true;
     expect(PassportTest.next.getCall(0).args[0]).to.be.instanceof(JwtTokenExpiredError);
   }
@@ -82,7 +84,7 @@ class PassportTest {
   public authenticateBadSignature() {
     this.req.headers.authorization = `bearer ${this.accessTokenBadSignature}`;
 
-    jwtPassport.authenticate(this.req, this.res, PassportTest.next);
+    authenticate(this.req, this.res, PassportTest.next);
     expect(PassportTest.next.calledOnce).to.be.true;
     expect(PassportTest.next.getCall(0).args[0]).to.be.instanceof(JwtTokenSignatureError);
   }
@@ -91,7 +93,7 @@ class PassportTest {
   public authenticateNoToken() {
     this.req.headers.authorization = 'bearer ';
 
-    jwtPassport.authenticate(this.req, this.res, PassportTest.next);
+    authenticate(this.req, this.res, PassportTest.next);
     expect(PassportTest.next.calledOnce).to.be.true;
     expect(PassportTest.next.getCall(0).args[0]).to.be.instanceof(NoJwtTokenError);
   }
@@ -101,7 +103,7 @@ class PassportTest {
     this.req.headers.authorization = `bearer ${this.accessTokenUserNotFound}`;
     PassportTest.findOneStub.withArgs({ login: this.unknownUser.login }).resolves(null);
 
-    jwtPassport.authenticate(this.req, this.res, PassportTest.next);
+    authenticate(this.req, this.res, PassportTest.next);
     setTimeout(() => {
       expect(PassportTest.next.calledOnce).to.be.true;
       expect(PassportTest.next.getCall(0).args[0]).to.be.instanceof(UnauthorizedAccessError);

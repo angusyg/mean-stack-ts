@@ -42,6 +42,7 @@
     "cors": "^2.8.4",
     "cross-env": "^5.2.0",
     "csurf": "^1.9.0",
+    "dotenv": "^6.1.0",
     "express": "^4.16.4",
     "express-pino-logger": "^4.0.0",
     "express-restify-mongoose": "^5.0.0",

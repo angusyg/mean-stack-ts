@@ -6,6 +6,7 @@ import User from '../models/users';
 import { ApiError, UnauthorizedAccessError } from '../lib/errors';
 import logger from '../lib/logger';
 import { LoginDto, TokenDto, LoginResultDto, IUserDocument, RefreshDto } from '../@types';
+import Configuration from '../config/config';
 
 /**
  * Api service
@@ -29,8 +30,8 @@ class ApiService {
         login: user.login,
         roles: user.roles,
       },
-      apiConfig.tokenSecretKey,
-      { expiresIn: apiConfig.accessTokenExpirationTime }
+      Configuration.get('api.token.key'),
+      { expiresIn: Configuration.get('api.token.expiration') }
     );
   }
 

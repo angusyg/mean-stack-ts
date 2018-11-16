@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import { suite, test } from "mocha-typescript";
 import { SinonStub, stub } from 'sinon';
-import Security from './security';
 import { ForbiddenOperationError } from './errors';
 import * as passport from './passport';
+import Configuration from '../config/config';
+import { initialize, requiresLogin, requiresRole } from './security';
 
 @suite
 class ApiServiceTest {
@@ -26,6 +27,7 @@ class ApiServiceTest {
   }
 
   constructor() {
+    Configuration.load();
     this.req = { user: { roles: ['USER'] } };
     this.res = {};
   }

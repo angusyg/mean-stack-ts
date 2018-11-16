@@ -1,4 +1,3 @@
-
 export default {
   port: {
     doc: 'Application server port',
@@ -23,17 +22,22 @@ export default {
       format: '*',
       default: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
     },
-    headers: {
+    allowedHeaders: {
       doc: 'CORS allowed headers',
       format: '*',
       default: ['authorization', 'refresh', 'content-type'],
+    },
+    exposedHeaders: {
+      doc: 'CORS exposed headers',
+      format: '*',
+      default: [],
     },
     credentials: {
       doc: 'CORS authorization to send custom headers',
       format: Boolean,
       default: true,
     },
-    maxage: {
+    maxAge: {
       doc: 'CORS max age between CORS OPTIONS request (in seconds)',
       format: Number,
       default: 600,
@@ -41,7 +45,7 @@ export default {
     origins: {
       doc: 'CORS allowed origins',
       format: '*',
-      default: '',
+      default: [],
     },
   },
 };

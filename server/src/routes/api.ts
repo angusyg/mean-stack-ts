@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import kindOf from 'kind-of';
 import apiController from '../controllers/api';
-import apiConfig from '../config/api';
 import { requiresLogin, requiresRole } from '../lib/security';
 import User from '../models/users';
+import Configuration from '../config/config';
 
 /**
  * API router
@@ -42,7 +41,7 @@ class ApiRouter {
      * @code {204} if successful, no content
      * @name logger
      */
-    this.router.post(apiConfig.loggerPath, apiController.logger);
+    this.router.post(Configuration.get('api.paths.log'), apiController.logger);
 
     /**
      * @path {POST} /login
@@ -57,7 +56,7 @@ class ApiRouter {
      * @code {401} if password is not valid
      * @name login
      */
-    this.router.post(apiConfig.loginPath, apiController.login);
+    this.router.post(Configuration.get('api.paths.login'), apiController.login);
 
     /**
      * @path {GET} /logout
@@ -67,7 +66,7 @@ class ApiRouter {
      * @code {401} if login is not valid
      * @name logout
      */
-    this.router.get(apiConfig.logoutPath, requiresLogin, apiController.logout);
+    this.router.get(Configuration.get('api.paths.logout'), requiresLogin, apiController.logout);
 
     /**
      * @path {GET} /refresh
@@ -80,7 +79,7 @@ class ApiRouter {
      * @code {500} if an unexpected error occurred
      * @name refresh
      */
-    this.router.get(apiConfig.refreshPath, requiresLogin, apiController.refreshToken);
+    this.router.get(Configuration.get('api.paths.refresh'), requiresLogin, apiController.refreshToken);
 
     /**
      * @path {GET} /validate
@@ -90,7 +89,7 @@ class ApiRouter {
      * @code {401} if JWT is invalid
      * @name validate
      */
-    this.router.get(apiConfig.validateTokenPath, requiresLogin, apiController.validateToken);
+    this.router.get(Configuration.get('api.paths.validate'), requiresLogin, apiController.validateToken);
   }
 
   /**

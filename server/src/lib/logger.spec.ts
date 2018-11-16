@@ -1,18 +1,21 @@
 import { expect } from 'chai';
 import { suite, test } from 'mocha-typescript';
+import Configuration from '../config/config';
 
 @suite
 class LoggerTest {
   public before() {
-    delete require.cache[require.resolve('../config/logger')];
     delete require.cache[require.resolve('./logger')];
   }
 
-  constructor() {}
+  constructor() {
+    Configuration.load();
+  }
 
   @test('NODE_ENV=test: logger should be disabled')
   public async loggerTest() {
     process.env.LOG_ENABLED = 'false';
+    Configuration.reload();
 
     const logger = await import('./logger');
     expect(logger.default.levelVal).to.be.equal(Infinity);
@@ -22,6 +25,7 @@ class LoggerTest {
   public async loggerDev() {
     process.env.NODE_ENV = 'development';
     process.env.LOG_ENABLED = 'true';
+    Configuration.reload();
 
     const logger = await import('./logger');
     expect(logger.default.levelVal).to.be.equal(10);
@@ -31,6 +35,7 @@ class LoggerTest {
   public async loggerProduction() {
     process.env.NODE_ENV = 'production';
     process.env.LOG_ENABLED = 'true';
+    Configuration.reload();
 
     const logger = await import('./logger');
     expect(logger.default.levelVal).to.be.equal(50);

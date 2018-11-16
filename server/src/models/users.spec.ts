@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { SinonStub, stub } from 'sinon';
 import restify from 'express-restify-mongoose';
 import User from './users';
+import Configuration from '../config/config';
 
 @suite
 class UserModelTest {
@@ -21,6 +22,7 @@ class UserModelTest {
   }
 
   constructor() {
+    Configuration.load();
     this.userTest = {
       login: 'TEST',
       password: 'PASSWORD',
