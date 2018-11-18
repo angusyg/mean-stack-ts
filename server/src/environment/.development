@@ -7,5 +7,5 @@ DB_NAME=mean
 API_BASE=/api
 API_ACCESS_TOKEN_SECRET_KEY=JWT-secret
 
-LOG_LEVEL=debug
+LOG_LEVEL=error
 LOG_ENABLED=true

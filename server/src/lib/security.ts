@@ -4,6 +4,7 @@ import * as passport from './passport';
 import { ForbiddenOperationError } from './errors';
 import { CorsOptions } from 'cors';
 import Configuration from '../config/config';
+import Logger from './logger';
 
 /**
  * Initializes passport security
@@ -36,11 +37,13 @@ export function requiresLogin(req: Request, res: Response, next: NextFunction): 
  */
 export function requiresRole(roles?: string[]): Function {
   return (req: RequestEnhanced, res: Response, next: NextFunction) => {
+    Logger.debug('Checking roles of user for request', { roles, user: req.user });
     // If no role, lets pass request to next middleware
     if (!roles || roles.length === 0) return next();
     // Checks if current request user has an authorized role
     if (req.user && roles.some(role => req.user.roles.includes(role))) return next();
     // No authorized role, creates an error and goes to next middleware
+    Logger.error('Access with bad user role', { roles, user: req.user });
     return next(new ForbiddenOperationError());
   };
 }
@@ -61,11 +64,13 @@ export function getCorsConfiguration(): CorsOptions {
     origin: (origin: string, callback: Function): void => {
       // Origins init
       const whitelistOrigins: string | string[] = Configuration.get('app.cors.origins');
+      Logger.debug('Checking origin of CORS request', { whitelistOrigins, origin });
       // If no white list origins, authorized
       if (whitelistOrigins.length === 0) return callback(null, true);
       // If request origin is in white list origin, authorized
       if (whitelistOrigins.indexOf(origin) !== -1) return callback(null, true);
       // Unauthorized origin
+      Logger.error('Unallowed CORS request', { whitelistOrigins, origin });
       return callback(new Error('Not allowed by CORS'));
     },
   };

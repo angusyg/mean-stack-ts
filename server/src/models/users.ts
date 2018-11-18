@@ -1,10 +1,11 @@
 import { Schema, model } from 'mongoose';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 import restify, { RestifyOptions } from 'express-restify-mongoose';
 import { Router, Request, Response, NextFunction } from 'express';
 import { RequestEnhanced, IUser, IUserModel, IUserDocument } from '../@types';
 import { NotFoundResourceError } from '../lib/errors';
 import Configuration from '../config/config';
+import Logger from '../lib/logger';
 
 /**
  * Describes a user settings
@@ -97,8 +98,10 @@ export const userSchema: Schema = new Schema({
  * @memberof userSchema
  */
 userSchema.pre<IUserDocument>('save', function(next: NextFunction) {
-  // eslint-disable-line func-names
-  if (this.isModified('password')) this.password = bcrypt.hashSync((<IUser>this).password, Configuration.get('app.salt'));
+  if (this.isModified('password')) {
+    Logger.debug('Hashing user password', { login: this.login });
+    this.password = bcryptjs.hashSync((<IUser>this).password, Configuration.get('app.salt'));
+  }
   next();
 });
 
@@ -112,7 +115,8 @@ userSchema.pre<IUserDocument>('save', function(next: NextFunction) {
 userSchema.methods.comparePassword = function(candidatePassword: string) {
   // eslint-disable-line func-names
   return new Promise((resolve, reject) => {
-    bcrypt
+    Logger.debug('Comparing user password', { login: this.login });
+    bcryptjs
       .compare(candidatePassword, this.password)
       .then((match: boolean) => resolve(match))
       .catch(/* istanbul ignore next */ (err: Error) => reject(err));

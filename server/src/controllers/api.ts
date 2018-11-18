@@ -21,8 +21,8 @@ class ApiController {
    * @memberof ApiController
    */
   public logger(req: Request, res: Response, next: NextFunction): void {
-    if (!logger[req.params.level]) return next(new ApiError(`${req.params.level} is not a valid log level`));
-    logger[req.params.level](JSON.stringify(req.body));
+    // if (!logger[req.params.level]) return next(new ApiError(`${req.params.level} is not a valid log level`));
+    // logger[req.params.level](JSON.stringify(req.body));
     res.status(204).end();
   }
 

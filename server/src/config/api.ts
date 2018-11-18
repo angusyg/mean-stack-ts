@@ -1,37 +1,4 @@
 export default {
-  base: {
-    doc: 'API base path',
-    format: String,
-    default: '/api',
-    env: 'API_BASE',
-  },
-  paths: {
-    login: {
-      doc: 'API login path',
-      format: String,
-      default: '/login',
-    },
-    logout: {
-      doc: 'API logout path',
-      format: String,
-      default: '/logout',
-    },
-    log: {
-      doc: 'API log path',
-      format: String,
-      default: '/log/:level',
-    },
-    refresh: {
-      doc: 'API refresh access token path',
-      format: String,
-      default: '/refresh',
-    },
-    validate: {
-      doc: 'API access token validation path',
-      format: String,
-      default: '/validate',
-    },
-  },
   token: {
     access: {
       key: {

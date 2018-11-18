@@ -1,6 +1,5 @@
 import kindOf from 'kind-of';
 import http from 'http';
-import logger from './logger';
 import { Request, Response } from 'express';
 import { RequestEnhanced } from '../@types';
 
@@ -109,20 +108,8 @@ export class ApiError extends Error {
       if (type === 'number') this.statusCode = args[2];
       // Error if third argument is not type of number
       else throw new TypeError(`Invalid type '${type}' for new ApiError third argument`);
-    } else if (args.length > 3) throw new TypeError(`Invalid number of arguments for new ApiError (${args.length} should be <= 3)`); // Error if too many arguments
-    // Log of error creation
-    // If possible, extracts infos from stack
-    let pre = '';
-    if (this.stack) {
-      const s = /at (.*) \(.*\)/.exec(this.stack.split('\n')[1]);
-      if (s) {
-        // Extraction of file:line:column
-        const line = /.* \(.*\\(.*)\)/.exec(s[1]);
-        // Creation of log header
-        if (line && line.length >= 1) pre = `[${line[1]}] `;
-      }
-    }
-    logger.error(`${pre}ApiError`, this);
+      // Error if too many arguments
+    } else if (args.length > 3) throw new TypeError(`Invalid number of arguments for new ApiError (${args.length} should be <= 3)`);
   }
 
   /**

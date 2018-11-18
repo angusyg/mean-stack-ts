@@ -1,5 +1,5 @@
 import express, { Application } from 'express';
-import path from 'path';
+import path, { format } from 'path';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import compression from 'compression';
@@ -8,10 +8,11 @@ import uuidv4 from 'uuid/v4';
 import helmet from 'helmet';
 import cors from 'cors';
 import Configuration from './config/config';
-import { errorNoRouteMapped, errorHandler } from './lib/errorhandler';
 import logger from './lib/logger';
+import { errorNoRouteMapped, errorHandler } from './lib/errorhandler';
 import { getCorsConfiguration, initialize } from './lib/security';
 import apiRouter from './routes/api';
+import Logger from './lib/logger';
 
 /**
  * Main application
@@ -25,14 +26,16 @@ export default class App {
    * @type {Application}
    * @memberof App
    */
-  public readonly app: Application;
+  private readonly app: Application;
 
   /**
    * Creates an instance of App.
    *
+   * @param {Function} resolve
+   * @param {Function} reject
    * @memberof App
    */
-  constructor() {
+  private constructor(resolve: Function, reject: Function) {
     // App creation
     this.app = express();
     // App configuration
@@ -44,10 +47,30 @@ export default class App {
         this.routes();
         // Error handlers
         this.errorHandlers();
+        resolve(this.app);
       })
       .catch((err: Error) => {
-        throw err;
+        reject(err);
       });
+  }
+
+  /**
+   * Bootstraps application
+   *
+   * @static
+   * @returns {Promise<Application>} express application created
+   * @memberof App
+   */
+  public static bootstrap(): Promise<Application> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        Logger.info('Bootstraping express application');
+        // Creates application passing promise callback
+        return new App(resolve, reject);
+      } catch (err) {
+        return reject(err);
+      }
+    })
   }
 
   /**
@@ -59,16 +82,19 @@ export default class App {
   private configuration(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
+        Logger.debug('Configuring express application');
         // Port set
         this.app.set('port', Configuration.get('app.port'));
         // Connection to db
+        Logger.info('Connecting database', Configuration.get('db'));
         const connection = await mongoose.connect(`mongodb://${Configuration.get('db.host')}/${Configuration.get('db.name')}`, { useNewUrlParser: true });
-        console.info(`Connection opened to DB 'mongodb://${Configuration.get('db.host')}/${Configuration.get('db.name')}'`);
+        logger.info(`Connection opened to DB 'mongodb://${Configuration.get('db.host')}/${Configuration.get('db.name')}'`);
         // Database registration
         this.app.set('db', mongoose.connection);
+        Logger.debug('Express application configured');
         return resolve();
       } catch (err) {
-        console.error(`Error during DB connection: ${err}`);
+        logger.error('Error application configuration', err);
         return reject(err);
       }
     });
@@ -81,10 +107,11 @@ export default class App {
    * @memberof App
    */
   private middlewares(): void {
+    Logger.debug('Adding middlewares to express application');
     // Logger middleware
     this.app.use(
       pino({
-        logger,
+        logger: logger.pino,
         genReqId: () => uuidv4(),
       })
     );
@@ -101,7 +128,11 @@ export default class App {
     // Static files
     this.app.use(compression());
     // If production env, lets express server serve static resources
-    if (Configuration.get('app.serve')) this.app.use(express.static(path.join(__dirname, '../../client/dist')));
+    if (Configuration.get('app.serve')) {
+      Logger.info('Express application static content enabled');
+      this.app.use(express.static(path.join(__dirname, '../../client/dist')));
+    }
+    Logger.debug('Middlewares added to express application');
   }
 
   /**
@@ -111,8 +142,10 @@ export default class App {
    * @memberof App
    */
   private routes(): void {
+    Logger.debug('Adding routes to express application');
     // Maps modules routes
     this.app.use(Configuration.get('api.base'), apiRouter);
+    Logger.debug('Routes added to express application');
   }
 
   /**
@@ -122,8 +155,10 @@ export default class App {
    * @memberof App
    */
   private errorHandlers(): void {
+    Logger.debug('Adding error handlers to express application');
     // Default error handlers
     this.app.use(errorNoRouteMapped);
     this.app.use(errorHandler);
+    Logger.debug('Error handlers added to express application');
   }
 }

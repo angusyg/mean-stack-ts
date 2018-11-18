@@ -4,7 +4,7 @@ import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import User from '../models/users';
 import { UnauthorizedAccessError, JwtTokenExpiredError, NoJwtTokenError, JwtTokenSignatureError } from './errors';
-import logger from '../lib/logger';
+import Logger from '../lib/logger';
 import { JwtPayloadDto, IUser, RequestEnhanced } from '../@types';
 import Configuration from '../config/config';
 
@@ -28,11 +28,15 @@ export function initialize(): RequestHandler {
  */
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   passport.authenticate('jwt', { session: false }, (err: Error, user: IUser, info: Error) => {
-    logger.debug(`Passport authentication done: - err = '${err}' - info = '${info}' - user = '${user}'`);
+    Logger.debug('Passport authentication done', { err, info, user });
     // If error, goes to next middleware
-    if (err) return next(err);
+    if (err) {
+      Logger.error('Error while authenticating user request with JWT Token', err);
+      return next(err);
+    }
     // Checks available info
     if (info) {
+      Logger.error('Error while authenticating user request with JWT', info);
       // If error, converts error and goes to next middleware
       if (info instanceof TokenExpiredError) return next(new JwtTokenExpiredError());
       if (info instanceof JsonWebTokenError) return next(new JwtTokenSignatureError());
@@ -41,7 +45,10 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       return next(new UnauthorizedAccessError());
     }
     // If user is not valid, creates error and goes to next mioddleware
-    if (!user) return next(new UnauthorizedAccessError('USER_NOT_FOUND', 'No user found for login in JWT Token'));
+    if (!user) {
+      Logger.error('User of received JWT Token not found');
+      return next(new UnauthorizedAccessError('USER_NOT_FOUND', 'No user found for login in JWT Token'));
+    }
     // Adds user to request
     (<RequestEnhanced>req).user = user;
     // Goes to next middleware
@@ -56,11 +63,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
  * @param {Function} cb callback function
  */
 function strategyCallback(jwtPayload: JwtPayloadDto, cb: Function): void {
-  logger.debug(`Passport JWT checking: trying to find user with payload: ${jwtPayload}`);
+  Logger.debug('Passport JWT checking: trying to find user with payload', jwtPayload);
   User.findOne({ login: jwtPayload.login })
     .then((user: IUser | null) => {
       if (!user) {
-        logger.debug(`Passport JWT checking: no user found for payload: ${jwtPayload}`);
+        Logger.debug('Passport JWT checking: no user found for payload', jwtPayload);
         return cb(null, false);
       }
       return cb(null, user);
@@ -69,7 +76,8 @@ function strategyCallback(jwtPayload: JwtPayloadDto, cb: Function): void {
 }
 
 // Authentication passport strategy
-const strategy = new Strategy({
+const strategy = new Strategy(
+  {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: <string>Configuration.get('api.token.access.key'),
   },
